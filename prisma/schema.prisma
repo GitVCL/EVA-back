@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  name         String    @db.VarChar(100)
+  email        String    @unique @db.VarChar(150)
+  passwordHash String    @db.VarChar(255)
+  role         String    @default("admin") @db.VarChar(20)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model Class {
+  id              Int        @id @default(autoincrement())
+  name            String     @db.VarChar(100)
+  description     String?    @db.Text
+  level           String     @default("Iniciante") @db.VarChar(30)
+  durationMinutes Int        @default(60)
+  maxCapacity     Int        @default(6)
+  priceCents      Int        @default(0)
+  active          Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  schedules       Schedule[]
+
+  @@map("classes")
+}
+
+model Schedule {
+  id         Int           @id @default(autoincrement())
+  classId    Int
+  date       DateTime
+  startTime  String        @db.VarChar(5)
+  endTime    String        @db.VarChar(5)
+  capacity   Int           @default(1)
+  active     Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  class      Class         @relation(fields: [classId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@unique([classId, date, startTime])
+  @@map("schedules")
+}
+
+model Student {
+  id        Int           @id @default(autoincrement())
+  name      String        @db.VarChar(100)
+  phone     String        @unique @db.VarChar(20)
+  email     String?       @db.VarChar(150)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  appointments Appointment[]
+
+  @@map("students")
+}
+
+model Appointment {
+  id         Int       @id @default(autoincrement())
+  studentId  Int
+  scheduleId Int
+  status     String    @default("confirmed") @db.VarChar(20)
+  notes      String?   @db.Text
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  student    Student   @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  schedule   Schedule  @relation(fields: [scheduleId], references: [id], onDelete: Restrict)
+
+  @@unique([scheduleId, studentId])
+  @@map("appointments")
+}
